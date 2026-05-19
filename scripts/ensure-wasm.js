@@ -5,7 +5,7 @@ const path = require('path');
 const root = process.cwd();
 const distWasm = path.join(root, 'dist', 'vsignal.wasm');
 const srcWasm = path.join(root, 'src', 'vsignal.wasm');
-const srcV = path.join(root, 'src', 'vsignal', 'signal.v');
+const srcRs = path.join(root, 'src', 'vsignal', 'signal.rs');
 
 if (fs.existsSync(distWasm)) {
   console.log('OK: dist/vsignal.wasm exists');
@@ -17,7 +17,7 @@ if (fs.existsSync(srcWasm)) {
   process.exit(0);
 }
 
-if (fs.existsSync(srcV)) {
+if (fs.existsSync(srcRs)) {
   console.error('WASM binary not found. Build it with `npm run build:wasm` before packaging.');
   process.exit(1);
 }
