@@ -17,7 +17,6 @@ jobs:
 
       # Cache bun downloads + install artifacts
       - name: Cache bun
-      
         uses: actions/cache@v4
         with:
           path: |
@@ -32,64 +31,17 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock', 'package.json') }}
 
-      # Cache V compiler + thirdparty toolchains
-      - name: Cache V toolchain
-        uses: actions/cache@v4
-        with:
-          path: vlang
-          key: ${{ runner.os }}-vlang-${{ hashFiles('.github/workflows/ci.yml') }}
-
-      # Build toolchain for generating src/vsignal.wasm
-      - name: Install V (if not cached)
-        run: |
-          if [ -x "vlang/v" ]; then
-            echo "V already cached"
-          else
-            git clone --depth 1 https://github.com/vlang/v vlang
-            (cd vlang && make -j2)
-          fi
-
-          # Use workspace-absolute path (PWD can change during the step)
-          echo "$GITHUB_WORKSPACE/vlang" >> $GITHUB_PATH
-          export PATH="$GITHUB_WORKSPACE/vlang:$PATH"
-          v version
+      - name: Install Rust target
+        run: rustup target add wasm32-unknown-unknown
 
       - name: Install Binaryen (wasm-opt)
-        run: |
-          cd vlang
-
-          # If cached vlang already has binaryen, don't re-run installer (it exits non-zero).
-          if [ -x "$PWD/thirdparty/binaryen/bin/wasm-opt" ] || ls -d "$PWD"/thirdparty/binaryen*/bin >/dev/null 2>&1; then
-            echo "binaryen already present"
-          else
-            ./v run ./cmd/tools/install_binaryen.vsh || true
-          fi
-
-          # $GITHUB_PATH becomes active in subsequent steps.
-          # V's installer may place wasm-opt under thirdparty/binaryen/<binaryen-version_xxx>/bin
-          BIN_DIR=""
-          if [ -x "$PWD/thirdparty/binaryen/bin/wasm-opt" ]; then
-            BIN_DIR="$PWD/thirdparty/binaryen/bin"
-          else
-            BIN_DIR=$(ls -d "$PWD"/thirdparty/binaryen*/bin 2>/dev/null | head -n 1 || true)
-          fi
-
-          if [ -z "$BIN_DIR" ]; then
-            echo "wasm-opt not found after install" >&2
-            exit 1
-          fi
-
-          echo "$BIN_DIR" >> $GITHUB_PATH
-          export PATH="$BIN_DIR:$PATH"
-          wasm-opt --version
+        run: sudo apt-get update && sudo apt-get install -y binaryen
 
       - name: Install deps
         run: bun install
 
       - name: Build wasm
-        run: |
-          export PATH="$GITHUB_WORKSPACE/vlang:$PATH"
-          bun run build:wasm
+        run: bun run build:wasm
 
       - name: Build
         run: bun run build

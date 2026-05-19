@@ -43,7 +43,7 @@
     "test:e2e": "bunx playwright test",
     "build": "tsdown --config tsdown.config.mjs",
     "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
-    "build:wasm": "v -prod -gc none -b wasm -d no_bounds_checking -d no_backtrace -d no_stdio -o src/vsignal.wasm src/vsignal/signal.v && (wasm-opt -all -O4 --strip-debug src/vsignal.wasm -o src/vsignal.wasm || echo 'wasm-opt not found, skipping')",
+    "build:wasm": "rustc --target wasm32-unknown-unknown -O --crate-type=cdylib src/vsignal/signal.rs -o src/vsignal.wasm && (wasm-opt -all -O4 --strip-debug src/vsignal.wasm -o src/vsignal.wasm || echo 'wasm-opt not found, skipping')",
     "prepublishOnly": "npm run build",
     "prepare": "npm run build",
     "prepack": "node ./scripts/ensure-wasm.js",
