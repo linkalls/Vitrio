@@ -26,6 +26,9 @@ static mut GRAPH: Graph = Graph {
     update_count: 0,
 };
 
+static mut VISITED_WORDS: [i32; 128] = [0; 128];
+static mut QUEUE: [i32; 4096] = [0; 4096];
+
 #[no_mangle]
 pub extern "C" fn init_graph() -> *mut Graph {
     unsafe {
@@ -66,21 +69,19 @@ pub extern "C" fn propagate(g_ptr: *mut Graph, source_id: i32) -> i32 {
         let g = &mut *g_ptr;
         g.update_count = 0;
 
-        let mut visited_words: [i32; 128] = [0; 128];
-        let mut queue: [i32; 4096] = [0; 4096];
         let mut q_head = 0;
         let mut q_tail = 0;
 
         let cnt = g.nodes[source_id as usize].dep_count;
         for i in 0..cnt {
             let dep = g.nodes[source_id as usize].dependents[i as usize];
-            queue[q_tail as usize] = dep;
+            QUEUE[q_tail as usize] = dep;
             q_tail += 1;
-            visited_words[(dep >> 5) as usize] |= 1 << (dep & 31);
+            VISITED_WORDS[(dep >> 5) as usize] |= 1 << (dep & 31);
         }
 
         while q_head < q_tail {
-            let curr = queue[q_head as usize];
+            let curr = QUEUE[q_head as usize];
             q_head += 1;
 
             g.update_buffer[g.update_count as usize] = curr;
@@ -92,12 +93,18 @@ pub extern "C" fn propagate(g_ptr: *mut Graph, source_id: i32) -> i32 {
                 let word_idx = (dep >> 5) as usize;
                 let mask = 1 << (dep & 31);
 
-                if (visited_words[word_idx] & mask) == 0 {
-                    visited_words[word_idx] |= mask;
-                    queue[q_tail as usize] = dep;
+                if (VISITED_WORDS[word_idx] & mask) == 0 {
+                    VISITED_WORDS[word_idx] |= mask;
+                    QUEUE[q_tail as usize] = dep;
                     q_tail += 1;
                 }
             }
+        }
+
+        // Clear the visited bits for the next call to avoid memset overhead
+        for i in 0..q_tail {
+            let dep = QUEUE[i as usize];
+            VISITED_WORDS[(dep >> 5) as usize] = 0;
         }
 
         g.update_count

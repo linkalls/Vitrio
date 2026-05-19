@@ -12,3 +12,4 @@
 - Added `startTransition(fn)` to schedule non-urgent updates (internally batched) for smoother interactions in heavy update paths.
 - Enhanced `createResource` with production-oriented options (`initialValue`, `retries`, `retryDelayMs`, `onError`) and updated EN/JA resource docs accordingly.
 - Updated README/API/getting-started/capabilities docs to include transition and resource resilience guidance.
+- Optimized `propagate` WASM function in `signal.rs` by switching from expensive stack-allocated array zeroing to static mutable global arrays (`QUEUE` and `VISITED_WORDS`). This recovers WASM port speed regressions and avoids `memset` bottlenecks.
