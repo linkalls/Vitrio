@@ -128,3 +128,9 @@ bun run build:types
 # すべてをビルド
 bun run prepare
 ```
+
+## WASM (Rust) の最適化
+WASMバックエンド (`src/vsignal/signal.rs`) のランタイムメモリー初期化のボトルネックを解消しました：
+- `propagate` 関数内のローカル配列 `[0; 4096]` (更新のたびに重い `memset` を引き起こしていた) を排除。
+- `QUEUE` および `VISITED_WORDS` に `static mut` 配列を使用し、リアクティブグラフ探索時のメモリアロケーションをゼロに。
+- `VISITED_WORDS` は変更されたビットのみ手動でクリアされ、O(Capacity) ではなく O(N) のクリーンアップを保証しています。

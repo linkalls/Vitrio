@@ -128,3 +128,9 @@ bun run build:types
 # Build All
 bun run prepare
 ```
+
+## WASM Rust Optimizations
+The WASM backend (`src/vsignal/signal.rs`) was heavily optimized to avoid runtime memory initialization bottlenecks:
+- Removed local arrays `[0; 4096]` in `propagate` which invoked `memset` on every update.
+- Utilized `static mut` arrays for `QUEUE` and `VISITED_WORDS` to achieve zero-allocation reactive graph traversal.
+- `VISITED_WORDS` is manually cleared only for the bits touched, ensuring O(N) cleanup rather than O(Capacity).

@@ -117,3 +117,20 @@ To measure actual performance gains:
 
 ## Backward Compatibility
 All changes are internal optimizations with no API changes. The framework remains 100% backward compatible.
+
+### 7. WASM Rust Global Queue and Visited Bitset (`signal.rs`)
+**Before:**
+```rust
+let mut visited_words: [i32; 128] = [0; 128];
+let mut queue: [i32; 4096] = [0; 4096];
+```
+Allocated and initialized on every `propagate` call, causing a costly `memset` penalty for 16.5 KB of memory on every reactive graph update.
+
+**After:**
+```rust
+static mut VISITED_WORDS: [i32; 128] = [0; 128];
+static mut QUEUE: [i32; 4096] = [0; 4096];
+```
+Used statically allocated mutable memory.
+
+**Impact:** Eliminates expensive continuous memory initialization, significantly speeding up WASM graph resolution.
